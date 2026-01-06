@@ -4,12 +4,68 @@
 import threading
 import uuid
 import time
+import os
+import sys
+import platform
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, Callable
 from pathlib import Path
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _find_automdxbuilder_path() -> str:
+    """
+    智能查找 AutoMdxBuilder 可执行文件路径
+
+    优先级:
+    1. 环境变量 AMB_PATH
+    2. 打包后的程序内置路径
+    3. 当前目录下的 AutoMdxBuilder_python/AutoMdxBuilder
+    4. 系统默认路径（根据操作系统）
+    """
+    # 1. 检查环境变量
+    if 'AMB_PATH' in os.environ:
+        return os.environ['AMB_PATH']
+
+    # 2. 检测是否在 PyInstaller 打包环境中
+    if getattr(sys, 'frozen', False):
+        # 打包环境：AutoMdxBuilder 在资源目录中
+        if hasattr(sys, '_MEIPASS'):
+            # sys._MEIPASS 是 PyInstaller 解压临时文件的目录
+            bundled_path = Path(sys._MEIPASS) / 'AutoMdxBuilder_python' / 'AutoMdxBuilder'
+            if bundled_path.exists():
+                logger.info(f"使用打包的 AutoMdxBuilder: {bundled_path}")
+                return str(bundled_path)
+
+    # 3. 检查当前目录
+    current_dir = Path.cwd()
+    local_path = current_dir / 'AutoMdxBuilder_python' / 'AutoMdxBuilder'
+    if local_path.exists():
+        logger.info(f"使用本地 AutoMdxBuilder: {local_path}")
+        return str(local_path)
+
+    # 4. 根据操作系统返回默认路径
+    system = platform.system()
+    if system == 'Windows':
+        # Windows 默认路径（假设安装在 Program Files 或当前目录）
+        default_paths = [
+            r'C:\Program Files\AutoMdxBuilder\AutoMdxBuilder.exe',
+            r'C:\AutoMdxBuilder\AutoMdxBuilder.exe',
+            'AutoMdxBuilder.exe'
+        ]
+        for path in default_paths:
+            if Path(path).exists():
+                logger.info(f"使用系统路径: {path}")
+                return path
+        # 如果都不存在，返回第一个作为默认值（让后续检查报错）
+        return default_paths[0]
+    else:
+        # macOS/Linux 默认路径
+        default_path = '/usr/local/bin/AutoMdxBuilder'
+        logger.info(f"使用默认路径: {default_path}")
+        return default_path
 
 
 @dataclass
@@ -222,7 +278,8 @@ def build_mdx_task(task_id: str, config_path: str, output_dir: str) -> dict:
             else:
                 update_task(task_id, status=line.strip())
 
-        amb_path = os.environ.get('AMB_PATH', '/usr/local/bin/AutoMdxBuilder')
+        # 智能查找 AutoMdxBuilder 路径
+        amb_path = _find_automdxbuilder_path()
         executor = AutoMdxBuilderExecutor(amb_path)
         success, message = executor.execute(
             config_path=config_path,
