@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字文献学 | AutoMdxBuilder 在线词典制作</title>
+    <meta name="description" content="将PDF转换为MDX电子词典，支持MDict、欧路词典等主流词典软件">
+
+    <!-- Google Fonts: Noto Serif SC + Ma Shan Zheng for elegant Chinese typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&family=ZCOOL+XiaoWei&family=Ma+Shan+Zheng&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            /*
+             * AESTHETIC: Digital Scriptorium / 数字文献学
+             * Enhanced traditional Chinese book aesthetics with refined details
+             */
+
+            /* Color Palette - Enhanced */
+            --ink-black: #1a1a1a;
+            --ink-gray: #4a4a4a;
+            --ink-light: #7a7a7a;
+            --ink-lighter: #9a9a9a;
+
+            --paper-base: #f7f5f0;
+            --paper-highlight: #fffefb;
+            --paper-shade: #e8e4da;
+
+            --vermilion: #c0362c;
+            --vermilion-vivid: #d9453b;
+            --vermilion-dark: #96251d;
+            --vermilion-glow: rgba(192, 54, 44, 0.15);
+
+            --jade: #3a7a6a;
+            --jade-dark: #2a5a4e;
+            --jade-glow: rgba(58, 122, 106, 0.15);
+
+            --gold: #bfa46f;
+            --gold-dim: #a38955;
+
+            /* Enhanced Spacing & Layout */
+            --radius-sm: 3px;
+            --radius-md: 6px;
+            --container-width: 880px;
+
+            /* Enhanced Shadows */
+            --shadow-paper:
+                0 2px 8px rgba(45, 40, 30, 0.04),
+                0 8px 24px rgba(45, 40, 30, 0.06),
+                0 16px 48px rgba(45, 40, 30, 0.04);
+
+            --shadow-float:
+                0 4px 16px rgba(45, 40, 30, 0.06),
+                0 12px 36px rgba(45, 40, 30, 0.08),
+                0 24px 64px rgba(45, 40, 30, 0.06);
+
+            --shadow-intense:
+                0 8px 24px rgba(45, 40, 30, 0.1),
+                0 16px 48px rgba(45, 40, 30, 0.12);
+
+            /* Animation Curves */
+            --ease-elegant: cubic-bezier(0.2, 0.8, 0.2, 1);
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Global Reset & Typography */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Serif SC', 'Songti SC', serif;
+            background: linear-gradient(135deg, var(--paper-base) 0%, #f0ede5 100%);
+            color: var(--ink-black);
+            line-height: 1.8;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Enhanced Paper Texture */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Subtle Vignette */
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 40%, transparent 50%, rgba(40, 35, 25, 0.04) 100%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Container */
+        .app-container {
+            width: 100%;
+            max-width: var(--container-width);
+            margin: 0 auto;
+            padding: 4.5rem 2rem 3rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.8s var(--ease-elegant);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Enhanced Header */
+        .app-header {
+            text-align: center;
+            margin-bottom: 4rem;
+            position: relative;
+        }
+
+        .app-header::after {
+            content: "";
+            display: block;
+            width: 80px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--vermilion), transparent);
+            margin: 2rem auto 0;
+            opacity: 0.6;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.4; transform: scaleX(0.8); }
+            50% { opacity: 0.8; transform: scaleX(1); }
+        }
+
+        .app-logo {
+            font-family: 'ZCOOL XiaoWei', serif;
+            font-size: 3.2rem;
+            font-weight: 400;
+            letter-spacing: 0.25em;
+            color: var(--ink-black);
+            display: inline-block;
+            position: relative;
+            animation: slideDown 0.8s var(--ease-elegant) 0.2s backwards;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Enhanced Seal Mark */
+        .app-logo::before {
+            content: "";
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            background: var(--vermilion);
+            border-radius: 50%;
+            margin-right: 1.2rem;
+            transform: translateY(-8px);
+            box-shadow:
+                0 0 0 4px var(--vermilion-glow),
+                0 0 20px var(--vermilion-glow);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow:
+                    0 0 0 4px var(--vermilion-glow),
+                    0 0 20px var(--vermilion-glow);
+            }
+            50% {
+                box-shadow:
+                    0 0 0 6px var(--vermilion-glow),
+                    0 0 30px var(--vermilion-glow);
+            }
+        }
+
+        .app-subtitle {
+            margin-top: 1.2rem;
+            font-size: 0.95rem;
+            letter-spacing: 0.2em;
+            color: var(--ink-light);
+            text-transform: uppercase;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-weight: 500;
+            opacity: 0.85;
+            animation: slideDown 0.8s var(--ease-elegant) 0.4s backwards;
+        }
+
+        /* Enhanced Main Card */
+        .main-card {
+            background: var(--paper-highlight);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-paper);
+            padding: 3.5rem;
+            position: relative;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            transition: all 0.6s var(--ease-elegant);
+            animation: slideUp 0.8s var(--ease-elegant) 0.3s backwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .main-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-float);
+        }
+
+        /* Enhanced Step Indicator */
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4rem;
+            position: relative;
+            padding: 0 1.5rem;
+        }
+
+        /* Animated Progress Line */
+        .step-indicator::before {
+            content: "";
+            position: absolute;
+            top: 16px;
+            left: 3rem;
+            right: 3rem;
+            height: 2px;
+            background: linear-gradient(90deg,
+                var(--paper-shade) 0%,
+                var(--ink-lighter) 10%,
+                var(--ink-lighter) 90%,
+                var(--paper-shade) 100%);
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        .step-item {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            flex: 1;
+            cursor: default;
+            transition: all 0.4s var(--ease-elegant);
+        }
+
+        .step-number {
+            width: 34px;
+            height: 34px;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--paper-highlight);
+            border: 2px solid var(--ink-light);
+            color: var(--ink-gray);
+            border-radius: 50%;
+            font-family: 'ZCOOL XiaoWei', serif;
+            font-size: 1.1rem;
+            transition: all 0.5s var(--ease-spring);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .step-label {
+            font-size: 0.9rem;
+            color: var(--ink-light);
+            letter-spacing: 0.05em;
+            transition: all 0.4s var(--ease-elegant);
+            font-weight: 500;
+        }
+
+        /* Enhanced Active State */
+        .step-item.active .step-number {
+            border-color: var(--vermilion);
+            background: var(--vermilion);
+            color: white;
+            transform: scale(1.25);
+            box-shadow:
+                0 4px 16px var(--vermilion-glow),
+                0 8px 32px var(--vermilion-glow),
+                0 0 0 4px rgba(192, 54, 44, 0.1);
+        }
+
+        .step-item.active .step-label {
+            color: var(--vermilion);
+            font-weight: 600;
+        }
+
+        /* Completed State */
+        .step-item.completed .step-number {
+            border-color: var(--jade);
+            background: var(--jade);
+            color: white;
+            box-shadow: 0 4px 12px var(--jade-glow);
+        }
+
+        .step-item.completed .step-label {
+            color: var(--jade);
+            font-weight: 600;
+        }
+
+        /* Content Sections */
+        .step {
+            display: none;
+            opacity: 0;
+            animation: fadeSlideIn 0.6s var(--ease-elegant) forwards;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .step-title {
+            font-family: 'ZCOOL XiaoWei', serif;
+            font-size: 1.75rem;
+            font-weight: 400;
+            color: var(--ink-black);
+            text-align: center;
+            margin-bottom: 2.5rem;
+            position: relative;
+            padding-bottom: 1.25rem;
+        }
+
+        .step-title::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        /* Enhanced Upload Area */
+        .upload-area {
+            border: 2px dashed var(--ink-gray);
+            background: linear-gradient(135deg, rgba(247, 245, 240, 0.5), rgba(255, 254, 251, 0.8));
+            border-radius: var(--radius-md);
+            padding: 4.5rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s var(--ease-elegant);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: "";
+            position: absolute;
+            inset: -100%;
+            background: radial-gradient(circle, var(--vermilion-glow) 0%, transparent 70%);
+            opacity: 0;
+            transition: all 0.6s var(--ease-elegant);
+        }
+
+        .upload-area:hover::before,
+        .upload-area.dragover::before {
+            opacity: 1;
+            inset: -50%;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--vermilion);
+            background: var(--paper-highlight);
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 8px 24px rgba(192, 54, 44, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: var(--ink-light);
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            transition: all 0.5s var(--ease-spring);
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-area:hover .upload-icon {
+            color: var(--vermilion);
+            transform: scale(1.15) rotate(-8deg);
+        }
+
+        .upload-title {
+            font-size: 1.3rem;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            color: var(--ink-black);
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-hint {
+            font-size: 0.95rem;
+            color: var(--ink-light);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Enhanced Form Elements */
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--ink-black);
+            font-size: 0.95rem;
+        }
+
+        .form-hint {
+            font-size: 0.85rem;
+            color: var(--ink-light);
+            margin-top: 0.5rem;
+            line-height: 1.5;
+        }
+
+        /* Enhanced Checkbox */
+        .checkbox-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-group:hover {
+            transform: translateX(4px);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--ink-gray);
+            border-radius: 3px;
+            display: grid;
+            place-content: center;
+            transition: all 0.3s var(--ease-spring);
+            cursor: pointer;
+        }
+
+        .checkbox-group input[type="checkbox"]::before {
+            content: "";
+            width: 12px;
+            height: 12px;
+            transform: scale(0);
+            background: var(--vermilion);
+            transition: 0.2s transform var(--ease-spring);
+            border-radius: 2px;
+        }
+
+        .checkbox-group input[type="checkbox"]:checked {
+            border-color: var(--vermilion);
+            background: rgba(192, 54, 44, 0.05);
+        }
+
+        .checkbox-group input[type="checkbox"]:checked::before {
+            transform: scale(1);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: none;
+            border-bottom: 2px solid var(--paper-shade);
+            background: transparent;
+            border-radius: 0;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s var(--ease-elegant);
+            color: var(--ink-black);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-bottom-color: var(--vermilion);
+            background: linear-gradient(to bottom, transparent, rgba(192, 54, 44, 0.02));
+            transform: translateY(-2px);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+            border: 2px solid var(--paper-shade);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+        }
+
+        textarea.form-control:focus {
+            border-color: var(--vermilion);
+            transform: none;
+        }
+
+        /* Enhanced Buttons */
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1rem 2.5rem;
+            border: none;
+            cursor: pointer;
+            font-family: 'Noto Serif SC', serif;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            transition: all 0.3s var(--ease-elegant);
+            position: relative;
+            overflow: hidden;
+            border-radius: var(--radius-sm);
+        }
+
+        .btn::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .btn:hover::before {
+            transform: translateX(100%);
+        }
+
+        /* Primary Button - Vermilion Seal */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--vermilion) 0%, var(--vermilion-vivid) 100%);
+            color: white;
+            box-shadow:
+                0 4px 12px var(--vermilion-glow),
+                0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--vermilion-vivid) 0%, var(--vermilion) 100%);
+            transform: translateY(-3px);
+            box-shadow:
+                0 6px 20px var(--vermilion-glow),
+                0 12px 40px var(--vermilion-glow);
+        }
+
+        .btn-primary:active {
+            transform: translateY(-1px);
+            box-shadow:
+                0 2px 8px var(--vermilion-glow);
+        }
+
+        /* Secondary Button */
+        .btn-secondary {
+            background: transparent;
+            color: var(--ink-gray);
+            border: 2px solid var(--ink-gray);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            color: var(--ink-black);
+            border-color: var(--ink-black);
+            background: rgba(0, 0, 0, 0.02);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Enhanced Status Cards */
+        .result-card {
+            background: linear-gradient(135deg, rgba(58, 122, 106, 0.03), rgba(58, 122, 106, 0.06));
+            border: 2px solid rgba(58, 122, 106, 0.2);
+            border-left: 5px solid var(--jade);
+            padding: 2rem 2.5rem;
+            border-radius: var(--radius-md);
+            margin-top: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            animation: slideUpFade 0.6s var(--ease-elegant);
+            box-shadow: 0 4px 16px var(--jade-glow);
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #fcfcfc, #fafafa);
+            border: 1px solid #e8e8e8;
+            border-left: 4px solid var(--gold);
+            padding: 1.25rem 1.75rem;
+            color: var(--ink-gray);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+            border-radius: var(--radius-sm);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        /* Enhanced Progress Section */
+        .progress-section {
+            margin-top: 2.5rem;
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(247, 245, 240, 0.5), rgba(255, 254, 251, 0.8));
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .progress-title {
+            font-family: 'ZCOOL XiaoWei', serif;
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            color: var(--ink-black);
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: var(--paper-shade);
+            margin: 1.5rem 0;
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--vermilion), var(--vermilion-vivid));
+            width: 0%;
+            transition: width 0.5s var(--ease-elegant);
+            position: relative;
+            border-radius: 3px;
+        }
+
+        /* Enhanced Shimmer Effect */
+        .progress-bar::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg,
+                transparent,
+                rgba(255, 255, 255, 0.5),
+                transparent);
+            transform: translateX(-100%);
+            animation: shimmerProgress 2s infinite;
+        }
+
+        @keyframes shimmerProgress {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
+        }
+
+        .progress-status {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--ink-light);
+            letter-spacing: 0.02em;
+        }
+
+        /* Preview Box */
+        .preview-box {
+            background: var(--ink-black);
+            color: #e8e8e8;
+            padding: 1.5rem;
+            border-radius: var(--radius-sm);
+            margin-top: 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            max-height: 300px;
+            overflow-y: auto;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .preview-box pre {
+            margin: 0.5rem 0 0 0;
+            white-space: pre-wrap;
+            color: #c8c8c8;
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        .app-footer {
+            margin-top: 4rem;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            color: var(--ink-light);
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            background: linear-gradient(to top, rgba(232, 228, 218, 0.3), transparent);
+        }
+
+        .app-footer a {
+            color: var(--vermilion);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .app-footer a:hover {
+            color: var(--vermilion-vivid);
+            text-decoration: underline;
+        }
+
+        /* Animations */
+        @keyframes slideUpFade {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Utility */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Enhanced Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--paper-shade);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--ink-light);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--vermilion);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .app-container {
+                padding: 2rem 1.5rem;
+            }
+
+            .main-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .app-logo {
+                font-size: 2.4rem;
+                letter-spacing: 0.2em;
+            }
+
+            .step-indicator {
+                padding: 0 0.5rem;
+            }
+
+            .step-number {
+                width: 30px;
+                height: 30px;
+                font-size: 1rem;
+            }
+
+            .step-label {
+                font-size: 0.8rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .upload-area {
+                padding: 3rem 1.5rem;
+            }
+        }
+
+        /* Loading Animation for Upload */
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-icon {
+            animation: rotate 1.5s linear infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1 class="app-logo">数字文献学</h1>
+            <p class="app-subtitle">AutoMDX Digital Dictionary Builder</p>
+        </header>
+
+        <main class="main-card">
+            <!-- 步骤指示器 -->
+            <nav class="step-indicator">
+                <div class="step-item active" id="indicator-1">
+                    <div class="step-number"><span>壹</span></div>
+                    <div class="step-label">上传PDF</div>
+                </div>
+                <div class="step-item" id="indicator-2">
+                    <div class="step-number"><span>贰</span></div>
+                    <div class="step-label">转换设置</div>
+                </div>
+                <div class="step-item" id="indicator-3">
+                    <div class="step-number"><span>叁</span></div>
+                    <div class="step-label">索引文件</div>
+                </div>
+                <div class="step-item" id="indicator-4">
+                    <div class="step-number"><span>肆</span></div>
+                    <div class="step-label">生成词典</div>
+                </div>
+            </nav>
+
+            <!-- 步骤1: 上传PDF -->
+            <section class="step active" id="step-1">
+                <h2 class="step-title">选择PDF文件</h2>
+
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon"
+                        style="font-family: 'ZCOOL XiaoWei', serif; font-style: normal; line-height: 1;">書</div>
+                    <h3 class="upload-title">拖拽文件到此处上传</h3>
+                    <p class="upload-hint">或点击选择PDF文件</p>
+                    <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+                    <button class="btn btn-primary" style="margin-top: 2rem"
+                        onclick="event.stopPropagation(); document.getElementById('fileInput').click()">
+                        <i class="bi bi-upload"></i>
+                        选取文件
+                    </button>
+                </div>
+
+                <div id="fileInfo" class="result-card" style="display: none;">
+                    <div>
+                        <h5><i class="bi bi-check-circle-fill" style="color: var(--jade); font-size: 1.5rem;"></i> 文件已选择</h5>
+                        <p id="fileName" style="margin: 0.5rem 0; color: var(--ink-gray);"></p>
+                    </div>
+                    <button class="btn btn-primary" onclick="goToStep(2)">
+                        下一步
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 步骤2: 转换设置 -->
+            <section class="step" id="step-2">
+                <h2 class="step-title">PDF转换设置</h2>
+
+                <form id="convertForm">
+                    <div class="info-box">
+                        <i class="bi bi-info-circle" style="margin-right: 0.5rem;"></i>
+                        已优化为 <strong>200 DPI / 75% 质量</strong>，平衡清晰度与文件大小。
+                    </div>
+
+                    <input type="hidden" id="dpi" value="200">
+                    <input type="hidden" id="quality" value="75">
+
+                    <div class="form-group">
+                        <label class="checkbox-group">
+                            <input type="checkbox" id="autoCrop">
+                            <span style="font-weight: 500;">自动裁剪白边</span>
+                        </label>
+                        <p class="form-hint">去除PDF页面周围多余的空白区域</p>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="goToStep(1)">
+                            <i class="bi bi-arrow-left"></i>
+                            上一步
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="startConversion()">
+                            <i class="bi bi-gear-fill"></i>
+                            开始转换
+                        </button>
+                    </div>
+                </form>
+
+                <div class="progress-section" id="convertProgress" style="display: none;">
+                    <h4 class="progress-title">正在转换PDF...</h4>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="convertProgressBar" style="width: 0%"></div>
+                    </div>
+                    <p class="progress-status" id="convertStatus">准备中...</p>
+                </div>
+
+                <div id="convertResult" class="result-card" style="display: none;">
+                    <div>
+                        <h5><i class="bi bi-check-circle-fill" style="color: var(--jade); font-size: 1.5rem;"></i> PDF转换完成</h5>
+                        <p id="convertStats" style="margin: 0.5rem 0; color: var(--ink-gray);"></p>
+                    </div>
+                    <button class="btn btn-primary" onclick="goToStep(3)">
+                        下一步
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 步骤3: 索引文件上传 -->
+            <section class="step" id="step-3">
+                <h2 class="step-title">上传索引文件</h2>
+
+                <div class="info-box">
+                    <strong>索引文件格式说明：</strong><br>
+                    • <strong>图像词典</strong>：每行格式为 <code>词目[Tab]页码</code>（例：阿　100）<br>
+                    • 支持 <strong>TXT文件</strong>（UTF-8编码）和 <strong>Excel文件</strong>（.xlsx/.xls）
+                </div>
+
+                <div class="upload-area" id="indexUploadArea">
+                    <i class="bi bi-file-earmark-spreadsheet upload-icon"></i>
+                    <h3 class="upload-title">选择索引文件</h3>
+                    <p class="upload-hint">支持 TXT / Excel 格式</p>
+                    <input type="file" id="indexFileInput" accept=".txt,.xlsx,.xls" style="display: none;">
+                    <button class="btn btn-primary" style="margin-top: 2rem"
+                        onclick="event.stopPropagation(); document.getElementById('indexFileInput').click()">
+                        <i class="bi bi-file-earmark-text"></i>
+                        选择文件
+                    </button>
+                </div>
+
+                <div id="indexFileInfo" class="result-card" style="display: none;">
+                    <div style="flex: 1;">
+                        <h5><i class="bi bi-file-check" style="color: var(--jade); font-size: 1.5rem;"></i> 索引文件已选择</h5>
+                        <p id="indexFileName" style="margin: 0.5rem 0; color: var(--ink-gray);"></p>
+
+                        <div class="form-group" style="margin-top: 1.5rem;">
+                            <label class="form-label">正文起始页</label>
+                            <input type="number" class="form-control" id="bodyStart" value="1" min="1"
+                                style="max-width: 180px;">
+                            <p class="form-hint">书本第1页对应PDF的第几页（如书本第1页在PDF第9页，填9）</p>
+                        </div>
+                    </div>
+
+                    <div class="btn-group" style="margin-top: 0; flex-direction: column;">
+                        <button class="btn btn-secondary" onclick="goToStep(2)">
+                            <i class="bi bi-arrow-left"></i>
+                            上一步
+                        </button>
+                        <button class="btn btn-primary" onclick="uploadIndexFile()">
+                            <i class="bi bi-upload"></i>
+                            上传并处理
+                        </button>
+                    </div>
+                </div>
+
+                <div class="progress-section" id="indexProgress" style="display: none;">
+                    <h4 class="progress-title">正在处理索引文件...</h4>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="indexProgressBar" style="width: 0%"></div>
+                    </div>
+                    <p class="progress-status" id="indexStatus">准备中...</p>
+                </div>
+
+                <div id="indexResult" class="result-card" style="display: none;">
+                    <div style="flex: 1;">
+                        <h5><i class="bi bi-check-circle-fill" style="color: var(--jade); font-size: 1.5rem;"></i> 索引处理完成</h5>
+                        <p id="indexStats" style="margin: 0.5rem 0; color: var(--ink-gray);"></p>
+                        <div class="preview-box">
+                            <small style="color: #999;">预览（前20行）：</small>
+                            <pre id="indexPreview"></pre>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" style="margin-top: 1rem; align-self: flex-start;" onclick="goToStep(4)">
+                        下一步
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 步骤4: 生成词典 -->
+            <section class="step" id="step-4">
+                <h2 class="step-title">词典配置</h2>
+
+                <form id="buildForm">
+                    <div class="form-group">
+                        <label class="form-label">词典名称 <span style="color: var(--vermilion);">*</span></label>
+                        <input type="text" class="form-control" id="dictName" placeholder="请输入词典名称" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">作者</label>
+                        <input type="text" class="form-control" id="author" placeholder="您的名字（可选）">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">描述</label>
+                        <textarea class="form-control" id="description" placeholder="词典描述（可选）"></textarea>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="goToStep(3)">
+                            <i class="bi bi-arrow-left"></i>
+                            上一步
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="startBuild()">
+                            <i class="bi bi-hammer"></i>
+                            生成词典
+                        </button>
+                    </div>
+                </form>
+
+                <div class="progress-section" id="buildProgress" style="display: none;">
+                    <h4 class="progress-title">正在生成MDX词典...</h4>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="buildProgressBar" style="width: 0%"></div>
+                    </div>
+                    <p class="progress-status" id="buildStatus">准备中...</p>
+                </div>
+
+                <div id="buildResult" class="result-card" style="display: none; border-left-color: var(--gold);">
+                    <div style="flex: 1;">
+                        <h5 style="color: var(--gold);"><i class="bi bi-trophy-fill" style="font-size: 1.5rem;"></i> 词典生成完成！</h5>
+                        <p id="buildStats">请下载以下文件：</p>
+                        <div class="download-group" id="downloadButtons" style="margin-top: 1.5rem;">
+                            <!-- 动态生成的下载按钮 -->
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" style="margin-top: 0;" onclick="resetAll()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        制作新词典
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            <p>
+                本程序由网友 <strong>Mandolin</strong> 设计原始程序，<strong>李周渊</strong> 优化。<br>
+                Powered by <a href="https://github.com/lizhou828/AutoMdxBuilder" target="_blank">AutoMdxBuilder</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        let currentTaskId = null;
+        let convertCeleryTaskId = null;
+        let indexCeleryTaskId = null;
+        let buildCeleryTaskId = null;
+        let selectedIndexFile = null;
+
+        // Upload area events
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                fileInput.click();
+            }
+        });
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Index file upload area events
+        const indexUploadArea = document.getElementById('indexUploadArea');
+        const indexFileInput = document.getElementById('indexFileInput');
+
+        indexUploadArea.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                indexFileInput.click();
+            }
+        });
+        indexFileInput.addEventListener('change', handleIndexFileSelect);
+
+        function handleIndexFileSelect() {
+            const file = indexFileInput.files[0];
+            if (!file) return;
+
+            const ext = file.name.toLowerCase().split('.').pop();
+            if (!['txt', 'xlsx', 'xls'].includes(ext)) {
+                alert('请选择TXT或Excel文件！');
+                return;
+            }
+
+            selectedIndexFile = file;
+            document.getElementById('indexFileName').textContent = '文件名: ' + file.name;
+            document.getElementById('indexFileInfo').style.display = 'flex';
+            document.getElementById('indexUploadArea').style.display = 'none';
+        }
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                alert('请选择PDF文件！');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Show uploading state
+            uploadArea.innerHTML = '<div class="upload-icon loading-icon"><i class="bi bi-hourglass-split"></i></div><h3 class="upload-title">正在上传...</h3>';
+
+            fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('上传失败: ' + data.error);
+                        location.reload();
+                        return;
+                    }
+                    currentTaskId = data.task_id;
+                    document.getElementById('fileName').textContent = '文件名: ' + file.name;
+
+                    // Set default dictionary name
+                    const defaultName = file.name.replace(/\.[^/.]+$/, "");
+                    document.getElementById('dictName').value = defaultName;
+
+                    document.getElementById('fileInfo').style.display = 'flex';
+                    uploadArea.style.display = 'none';
+                })
+                .catch(error => {
+                    alert('上传失败: ' + error);
+                    location.reload();
+                });
+        }
+
+        function goToStep(step) {
+            // Hide all steps
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            // Show target step
+            document.getElementById('step-' + step).classList.add('active');
+
+            // Update indicators
+            for (let i = 1; i <= 4; i++) {
+                const indicator = document.getElementById('indicator-' + i);
+                indicator.classList.remove('active', 'completed');
+                if (i < step) {
+                    indicator.classList.add('completed');
+                } else if (i === step) {
+                    indicator.classList.add('active');
+                }
+            }
+
+            // Scroll to top smoothly
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function uploadIndexFile() {
+            if (!selectedIndexFile) {
+                alert('请先选择索引文件！');
+                return;
+            }
+
+            const bodyStart = document.getElementById('bodyStart').value;
+
+            const formData = new FormData();
+            formData.append('file', selectedIndexFile);
+            formData.append('task_id', currentTaskId);
+            formData.append('body_start', bodyStart);
+
+            document.getElementById('indexFileInfo').style.display = 'none';
+            document.getElementById('indexProgress').style.display = 'block';
+
+            fetch('/api/upload-index', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('上传索引文件失败: ' + data.error);
+                        document.getElementById('indexProgress').style.display = 'none';
+                        document.getElementById('indexFileInfo').style.display = 'flex';
+                        return;
+                    }
+                    indexCeleryTaskId = data.celery_task_id;
+                    monitorTask(indexCeleryTaskId, 'index');
+                })
+                .catch(error => {
+                    alert('上传索引文件失败: ' + error);
+                    document.getElementById('indexProgress').style.display = 'none';
+                    document.getElementById('indexFileInfo').style.display = 'flex';
+                });
+        }
+
+        function startConversion() {
+            const dpi = document.getElementById('dpi').value;
+            const quality = document.getElementById('quality').value;
+            const crop = document.getElementById('autoCrop').checked;
+
+            document.getElementById('convertProgress').style.display = 'block';
+            document.getElementById('convertForm').style.display = 'none';
+
+            fetch('/api/convert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    task_id: currentTaskId,
+                    dpi: parseInt(dpi),
+                    quality: parseInt(quality),
+                    crop: crop
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('启动转换失败: ' + data.error);
+                        return;
+                    }
+                    convertCeleryTaskId = data.celery_task_id;
+                    monitorTask(convertCeleryTaskId, 'convert');
+                })
+                .catch(error => {
+                    alert('启动转换失败: ' + error);
+                });
+        }
+
+        function startBuild() {
+            const dictName = document.getElementById('dictName').value;
+            const author = document.getElementById('author').value;
+            const description = document.getElementById('description').value;
+            const bodyStart = document.getElementById('bodyStart').value;
+
+            if (!dictName) {
+                alert('请输入词典名称！');
+                return;
+            }
+
+            // Generate config file (AutoMdxBuilder 1.5+ format)
+            const config = `[global]
+templ_choice = "B"
+name = "${dictName}"
+name_abbr = "${dictName.substring(0, 10)}"
+simp_trad_flg = false
+
+[template]
+[template.b]
+body_start = ${bodyStart}
+`;
+
+            document.getElementById('buildProgress').style.display = 'block';
+            document.getElementById('buildForm').style.display = 'none';
+
+            fetch('/api/build', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    task_id: currentTaskId,
+                    config: config
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('启动构建失败: ' + data.error);
+                        return;
+                    }
+                    buildCeleryTaskId = data.celery_task_id;
+                    monitorTask(buildCeleryTaskId, 'build');
+                })
+                .catch(error => {
+                    alert('启动构建失败: ' + error);
+                });
+        }
+
+        function monitorTask(celeryTaskId, type) {
+            const interval = setInterval(() => {
+                fetch('/api/status/' + celeryTaskId)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.state === 'PROGRESS') {
+                            const percent = Math.round((data.current / data.total) * 100);
+                            document.getElementById(type + 'ProgressBar').style.width = percent + '%';
+                            document.getElementById(type + 'Status').textContent = data.status;
+                        } else if (data.state === 'SUCCESS') {
+                            clearInterval(interval);
+                            document.getElementById(type + 'Progress').style.display = 'none';
+                            document.getElementById(type + 'Result').style.display = 'flex';
+                            if (type === 'convert') {
+                                const successful = data.result?.stats?.successful ?? 0;
+                                const failed = data.result?.stats?.failed ?? 0;
+                                document.getElementById('convertStats').textContent =
+                                    `成功转换 ${successful} 页，失败 ${failed} 页`;
+                            } else if (type === 'index') {
+                                const count = data.result?.count ?? 0;
+                                const preview = data.result?.preview ?? '';
+                                document.getElementById('indexStats').textContent =
+                                    `共处理 ${count} 条索引数据`;
+                                document.getElementById('indexPreview').textContent = preview;
+                            } else {
+                                const files = data.result?.files ?? [];
+                                document.getElementById('buildStats').textContent = '请下载以下文件：';
+
+                                // Generate download buttons
+                                const btnContainer = document.getElementById('downloadButtons');
+                                btnContainer.innerHTML = '';
+                                files.forEach(file => {
+                                    const btn = document.createElement('button');
+                                    btn.className = 'btn btn-primary';
+                                    btn.innerHTML = `<i class="bi bi-download"></i> ${file}`;
+                                    btn.onclick = () => downloadResult(file);
+                                    btnContainer.appendChild(btn);
+                                });
+                            }
+                        } else if (data.state === 'FAILURE') {
+                            clearInterval(interval);
+                            alert('任务失败: ' + data.status);
+                        }
+                    })
+                    .catch(error => {
+                        clearInterval(interval);
+                        alert('查询状态失败: ' + error);
+                    });
+            }, 1000);
+        }
+
+        function downloadResult(filename) {
+            let url = '/api/download/' + currentTaskId;
+            if (filename) {
+                url += '?filename=' + encodeURIComponent(filename);
+            }
+            window.location.href = url;
+        }
+
+        function resetAll() {
+            if (currentTaskId) {
+                fetch('/api/cleanup/' + currentTaskId, { method: 'DELETE' });
+            }
+            location.reload();
+        }
+    </script>
+</body>
+
+</html>

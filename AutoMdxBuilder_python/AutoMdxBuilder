@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+"""
+AutoMdxBuilder 启动脚本 (Linux 版本)
+使用 Python 直接运行
+"""
+import sys
+import os
+
+# 将当前目录添加到 Python 路径
+script_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, script_dir)
+
+# 导入并运行主程序
+if __name__ == '__main__':
+    # 将包含 auto_mdx_builder.py 的目录加入 sys.path
+    if script_dir not in sys.path:
+        sys.path.insert(0, script_dir)
+    
+    try:
+        from auto_mdx_builder import main, just_fix_windows_console
+        just_fix_windows_console()
+        main()
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+    except SystemExit as e:
+        sys.exit(e.code)

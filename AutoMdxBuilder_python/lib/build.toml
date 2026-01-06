@@ -1,0 +1,57 @@
+# 词典制作的配置文件（用于 AutoMdxBuilder 1.4 版本及以上）
+
+[global]
+templ_choice = "B"  # 【重要】选择要应用的模板, 同时需完成下方对应模板的具体配置（如果有的话）
+name = "文史工具书词典"  # 书名
+name_abbr = "WSGJSCD"   # 书名首字母缩写
+simp_trad_flg = false  # 是否需要繁简通搜
+add_extra_navis = false  # 是否需要添加额外的导航栏(index_all_navi_\d+.txt)
+multi_volume = false  # 是否是多卷的
+# 多卷模式下可以标示每个分卷名 (作用于 toc, index_all/toc_all)
+#vol_names = [
+#    "政治斗争卷",
+#    "政治人物卷",
+#    "军事卷"
+#]
+
+
+[template]
+[template.a]
+# 图像词典 (模板A)
+#   必需材料: imgs(文件夹),  index/toc
+#   可选材料: syns,  info
+body_start = 1  # 正文起始页为第几张图(>=1)
+auto_split_columns = 1  # （可选）自适应分栏数 (默认1表示不分栏)
+body_end_page = 99999  # （可选）最大正文页码 (用于自适应分栏范围的判断, 默认到最后一页)
+
+# （可选）导航栏链接, 有目录 (toc) 就可以设置
+#navi_items = [
+#    {a = "凡例",ref = "凡例"},
+#    {a = "北京",ref = "一、北京话声韵调"},
+#    {a = "苏州",ref = "九、苏州话声韵调"},
+#    {a = "武汉",ref = "五、武汉话声韵调"},
+#    {a = "成都",ref = "六、成都话声韵调"}
+#]
+
+
+[template.b]
+# 图像词典 (模板B)
+#   必需材料: imgs(文件夹),  index_all/toc_all
+#   可选材料: syns,  info
+body_start = 1  # 正文起始页为第几张图(>=1)
+auto_split_columns = 1  # （可选）自适应分栏数 (默认1表示不分栏)
+body_end_page = 99999  # （可选）最大正文词条页码 (用于自适应分栏范围的判断, 默认到最后一页)
+add_extra_index = false  # 添加额外的 index.txt 文件
+
+
+[template.c]
+# 文本词典 (模板C)
+#   必需材料: index
+#   可选材料: data(文件夹), syns,  info
+add_headwords = true
+
+[template.d]
+# 文本词典 (模板D)
+#   必需材料: index_all
+#   可选材料: data(文件夹), syns,  info
+add_headwords = true

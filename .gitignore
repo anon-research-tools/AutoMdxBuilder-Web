@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# PyInstaller
+build/
+dist/
+*.spec.bak
+Release_Simple/
+Standalone_Release/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# macOS
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Uploads & Output (运行时生成)
+static/uploads/
+static/output/
+
+# 排除大文件和打包产物
+dist_package/
+*.mdd
+*.mdx
+AutoMdxBuilder_python/_tmp/
+
+# Redis
+dump.rdb
+celerybeat-schedule

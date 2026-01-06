@@ -1,0 +1,8 @@
+# 简化版依赖（无需 Redis/Celery）
+Flask==3.0.0
+Flask-CORS==4.0.0
+PyMuPDF>=1.24.0
+Pillow>=10.3.0
+python-dotenv==1.0.0
+openpyxl==3.1.2
+pyinstaller>=6.0.0

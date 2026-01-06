@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+.env
+
+# Logs
+*.log
+logs/
+
+# Data
+static/uploads/*
+static/output/*
+!static/uploads/.gitkeep
+!static/output/.gitkeep
+
+# Mac
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# Build
+build/
+dist/
+*.tar.gz
+
+# IDE
+.idea/
+.vscode/
+*.swp

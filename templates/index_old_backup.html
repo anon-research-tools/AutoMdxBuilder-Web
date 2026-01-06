@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字文献学 | AutoMdxBuilder 在线词典制作</title>
+    <meta name="description" content="将PDF转换为MDX电子词典，支持MDict、欧路词典等主流词典软件">
+
+    <!-- Google Fonts: Noto Serif SC for elegant Chinese typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=ZCOOL+XiaoWei&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            /* 
+             * AESTHETIC: Digital Scriptorium / Digital Literature 
+             * Merging traditional Chinese book aesthetics with modern web design.
+             */
+
+            /* Palatte */
+            --ink-black: #1f1f1f;
+            /* Deepest ink */
+            --ink-gray: #4a4a4a;
+            /* Faded ink */
+            --ink-light: #7a7a7a;
+            /* Watery ink */
+
+            --paper-base: #f7f5f0;
+            /* Xuan paper base */
+            --paper-highlight: #fffefb;
+            /* Brightest paper */
+            --paper-shade: #e6e2d8;
+            /* Aged paper edges */
+
+            --vermilion: #c0362c;
+            /* Cinnabar Seal (Primary) */
+            --vermilion-vivid: #d9453b;
+            /* Fresh Cinnabar */
+            --vermilion-dark: #96251d;
+            /* Dried Cinnabar */
+
+            --jade: #3a7a6a;
+            /* Old Jade (Success) */
+            --jade-dark: #2a5a4e;
+
+            --gold: #bfa46f;
+            /* Gilding (Accent) */
+            --gold-dim: #a38955;
+
+            /* Spacing & Layout */
+            --radius-sm: 2px;
+            /* Sharp, minimal rounding */
+            --radius-md: 4px;
+            --container-width: 860px;
+
+            /* Depth & Shadow */
+            --shadow-paper:
+                0 2px 10px rgba(45, 40, 30, 0.05),
+                0 20px 40px -10px rgba(45, 40, 30, 0.08);
+
+            --shadow-float:
+                0 10px 30px rgba(45, 40, 30, 0.08),
+                0 30px 60px -15px rgba(45, 40, 30, 0.12);
+
+            /* Animation */
+            --ease-elegant: cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        /* 
+         * GLOBAL RESET & TYPOGRAPHY 
+         */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Serif SC', 'Songti SC', serif;
+            background-color: var(--paper-base);
+            color: var(--ink-black);
+            line-height: 1.8;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Paper Texture Overlay */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Subtle Vignette */
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, transparent 60%, rgba(40, 35, 25, 0.03) 100%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* 
+         * LAYOUT 
+         */
+
+        .app-container {
+            width: 100%;
+            max-width: var(--container-width);
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styling */
+        .app-header {
+            text-align: center;
+            margin-bottom: 3.5rem;
+            position: relative;
+        }
+
+        .app-header::after {
+            content: "";
+            display: block;
+            width: 60px;
+            height: 2px;
+            background-color: var(--vermilion);
+            margin: 1.5rem auto 0;
+            opacity: 0.6;
+        }
+
+        .app-logo {
+            font-family: 'ZCOOL XiaoWei', serif;
+            font-size: 3rem;
+            font-weight: 400;
+            letter-spacing: 0.2em;
+            color: var(--ink-black);
+            display: inline-block;
+            position: relative;
+        }
+
+        /* Red ornamental mark next to title */
+        .app-logo::before {
+            content: "";
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background-color: var(--vermilion);
+            border-radius: 50%;
+            margin-right: 1rem;
+            transform: translateY(-6px);
+            box-shadow: 0 0 0 4px rgba(192, 54, 44, 0.1);
+        }
+
+        .app-subtitle {
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            letter-spacing: 0.15em;
+            color: var(--ink-light);
+            text-transform: uppercase;
+            font-family: system-ui, -apple-system, sans-serif;
+            /* Contrast with Serif */
+            opacity: 0.8;
+        }
+
+        /* 
+         * MAIN CARD - "The Floating Document" 
+         */
+
+        .main-card {
+            background-color: var(--paper-highlight);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-paper);
+            padding: 3rem;
+            position: relative;
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            transition: transform 0.6s var(--ease-elegant), box-shadow 0.6s var(--ease-elegant);
+        }
+
+        .main-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-float);
+        }
+
+        /* Decorative corner marks */
+        .corner-mark {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--ink-light);
+            opacity: 0;
+            /* Hidden by default, reveal on interaction maybe? Or just keep minimal */
+            transition: opacity 0.3s;
+        }
+
+        /* Keeping card clean for now, maybe remove corners for cleaner look */
+
+        /* 
+         * STEPS NAV 
+         */
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3.5rem;
+            position: relative;
+            padding: 0 1rem;
+        }
+
+        /* Connecting Line */
+        .step-indicator::before {
+            content: "";
+            position: absolute;
+            top: 14px;
+            /* Center with circle */
+            left: 2rem;
+            right: 2rem;
+            height: 1px;
+            background: linear-gradient(90deg,
+                    transparent 0%,
+                    var(--ink-light) 10%,
+                    var(--ink-light) 90%,
+                    transparent 100%);
+            opacity: 0.2;
+            z-index: 0;
+        }
+
+        .step-item {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            flex: 1;
+            /* Interaction area */
+            cursor: default;
+        }
+
+        .step-number {
+            width: 30px;
+            height: 30px;
+            margin: 0 auto 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--paper-highlight);
+            border: 1px solid var(--ink-light);
+            color: var(--ink-gray);
+            border-radius: 50%;
+            /* Circle nodes */
+            font-family: 'ZCOOL XiaoWei', serif;
+            font-size: 1rem;
+            transition: all 0.5s var(--ease-elegant);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .step-label {
+            font-size: 0.85rem;
+            color: var(--ink-light);
+            letter-spacing: 0.05em;
+            transition: all 0.5s var(--ease-elegant);
+            transform: translateY(0);
+        }
+
+        /* Active / Completed States */
+        .step-item.active .step-number {
+            border-color: var(--vermilion);
+            background-color: var(--vermilion);
+            color: white;
+            transform: scale(1.2);
+            box-shadow: 0 4px 15px rgba(192, 54, 44, 0.3);
+        }
+
+        .step-item.active .step-label {
+            color: var(--vermilion);
+            font-weight: 600;
+        }
+
+        .step-item.completed .step-number {
+            border-color: var(--ink-black);
+            background-color: var(--ink-black);
+            color: white;
+        }
+
+        .step-item.completed .step-label {
+            color: var(--ink-black);
+        }
+
+        /* 
+         * CONTENT SECTIONS 
+         */
+
+        .step {
+            display: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .step.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .step-title {
+            font-family: 'ZCOOL XiaoWei', serif;
+            font-size: 1.6rem;
+            font-weight: 400;
+            color: var(--ink-black);
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+            padding-bottom: 1rem;
+        }
+
+        /* Subtle divider below title */
+        .step-title::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 1px;
+            background-color: var(--gold);
+        }
+
+        /* 
+         * UPLOAD AREA 
+         */
+
+        .upload-area {
+            border: 1px dashed var(--ink-gray);
+            background-color: rgba(247, 245, 240, 0.5);
+            border-radius: var(--radius-sm);
+            padding: 4rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s var(--ease-elegant);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--vermilion);
+            background-color: rgba(192, 54, 44, 0.02);
+            transform: translateY(-2px);
+        }
+
+        .upload-icon {
+            font-size: 3.5rem;
+            color: var(--ink-light);
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .upload-area:hover .upload-icon {
+            color: var(--vermilion);
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .upload-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .upload-hint {
+            font-size: 0.9rem;
+            color: var(--ink-light);
+        }
+
+        /* 
+         * FORM ELEMENTS - Minimalist 
+         */
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        /* Checkbox styling override */
+        .checkbox-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--ink-gray);
+            border-radius: 2px;
+            display: grid;
+            place-content: center;
+            transition: all 0.2s;
+        }
+
+        .checkbox-group input[type="checkbox"]::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            transform: scale(0);
+            background-color: var(--vermilion);
+            transition: 0.2s transform ease-in-out;
+        }
+
+        .checkbox-group input[type="checkbox"]:checked {
+            border-color: var(--vermilion);
+        }
+
+        .checkbox-group input[type="checkbox"]:checked::before {
+            transform: scale(1);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-bottom: 1px solid var(--ink-light);
+            background: transparent;
+            border-radius: 0;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s;
+            color: var(--ink-black);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-bottom-color: var(--vermilion);
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* 
+         * BUTTONS - Seal Style 
+         */
+
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            padding: 0.8rem 2.2rem;
+            border: none;
+            cursor: pointer;
+            font-family: 'Noto Serif SC', serif;
+            font-size: 1rem;
+            letter-spacing: 0.05em;
+            transition: all 0.3s var(--ease-elegant);
+            position: relative;
+            overflow: hidden;
+            border-radius: 2px;
+        }
+
+        /* Primary: Vermilion Seal */
+        .btn-primary {
+            background-color: var(--vermilion);
+            color: white;
+            box-shadow: 0 4px 12px rgba(192, 54, 44, 0.25);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--vermilion-vivid);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(192, 54, 44, 0.35);
+        }
+
+        /* Secondary: Ink Stroke */
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--ink-gray);
+            border: 1px solid var(--ink-gray);
+        }
+
+        .btn-secondary:hover {
+            color: var(--ink-black);
+            border-color: var(--ink-black);
+            background-color: rgba(0, 0, 0, 0.02);
+            transform: translateY(-1px);
+        }
+
+        /* 
+         * STATUS & RESULTS 
+         */
+
+        .result-card {
+            background-color: rgba(58, 122, 106, 0.04);
+            border: 1px solid rgba(58, 122, 106, 0.15);
+            border-left: 3px solid var(--jade);
+            padding: 1.5rem 2rem;
+            border-radius: 2px;
+            margin-top: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            animation: slideUpFade 0.5s var(--ease-elegant);
+        }
+
+        /* Info Box */
+        .info-box {
+            background-color: #fcfcfc;
+            border: 1px solid #eee;
+            border-left: 3px solid var(--gold);
+            padding: 1rem 1.5rem;
+            color: var(--ink-gray);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Progress */
+        .progress-section {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 4px;
+            background-color: #eee;
+            margin: 1rem 0;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--vermilion);
+            width: 0%;
+            transition: width 0.4s ease;
+            position: relative;
+        }
+
+        /* Shimmer effect on progress */
+        .progress-bar::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.4),
+                    transparent);
+            transform: translateX(-100%);
+            animation: shimmer 1.5s infinite;
+        }
+
+        /* 
+         * FOOTER 
+         */
+        .app-footer {
+            text-align: center;
+            margin-top: 4rem;
+            padding: 2rem;
+            color: var(--ink-light);
+            font-size: 0.85rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* Animation Keyframes */
+        @keyframes slideUpFade {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shimmer {
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        /* Utility */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .main-card {
+                padding: 1.5rem;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .btn-group {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .app-logo {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1 class="app-logo">
+                数字文献学
+            </h1>
+            <p class="app-subtitle">AutoMDX Digital Dictionary Builder</p>
+        </header>
+
+        <main class="main-card">
+            <!-- 步骤指示器 -->
+            <nav class="step-indicator">
+                <div class="step-item active" id="indicator-1">
+                    <div class="step-number"><span>壹</span></div>
+                    <div class="step-label">上传PDF</div>
+                </div>
+                <div class="step-item" id="indicator-2">
+                    <div class="step-number"><span>贰</span></div>
+                    <div class="step-label">转换设置</div>
+                </div>
+                <div class="step-item" id="indicator-3">
+                    <div class="step-number"><span>叁</span></div>
+                    <div class="step-label">索引文件</div>
+                </div>
+                <div class="step-item" id="indicator-4">
+                    <div class="step-number"><span>肆</span></div>
+                    <div class="step-label">生成词典</div>
+                </div>
+            </nav>
+
+            <!-- 步骤1: 上传PDF -->
+            <section class="step active" id="step-1">
+                <h2 class="step-title">选择PDF文件</h2>
+
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon"
+                        style="font-family: 'ZCOOL XiaoWei', serif; font-style: normal; line-height: 1;">書</div>
+                    <h3 class="upload-title">拖拽文件到此处上传</h3>
+                    <p class="upload-hint">或点击选择PDF文件</p>
+                    <input type="file" id="fileInput" accept=".pdf">
+                    <button class="btn btn-primary" style="margin-top: 1rem"
+                        onclick="event.stopPropagation(); document.getElementById('fileInput').click()">
+                        选取文件
+                    </button>
+                </div>
+
+                <div id="fileInfo" class="result-card" style="display: none;">
+                    <h5><i class="bi bi-check-circle-fill icon-success"></i> 文件已选择</h5>
+                    <p id="fileName" style="margin: 0.5rem 0;"></p>
+                    <button class="btn btn-primary" onclick="goToStep(2)">
+                        下一步
+                    </button>
+                </div>
+            </section>
+
+            <!-- 步骤2: 转换设置 -->
+            <section class="step" id="step-2">
+                <h2 class="step-title">PDF转换设置</h2>
+
+                <form id="convertForm">
+                    <div class="info-box">
+                        <i class="bi bi-info-circle"></i>
+                        已优化为 <strong>200 DPI / 75% 质量</strong>，平衡清晰度与文件大小。
+                    </div>
+
+                    <input type="hidden" id="dpi" value="200">
+                    <input type="hidden" id="quality" value="75">
+
+                    <div class="form-group">
+                        <label class="checkbox-group">
+                            <input type="checkbox" id="autoCrop">
+                            <span>自动裁剪白边</span>
+                        </label>
+                        <p class="form-hint">去除PDF页面周围多余的空白区域</p>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="goToStep(1)">
+                            上一步
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="startConversion()">
+                            开始转换
+                        </button>
+                    </div>
+                </form>
+
+                <div class="progress-section" id="convertProgress" style="display: none;">
+                    <h4 class="progress-title">正在转换PDF...</h4>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="convertProgressBar" style="width: 0%"></div>
+                    </div>
+                    <p class="progress-status" id="convertStatus">准备中...</p>
+                </div>
+
+                <div id="convertResult" class="result-card" style="display: none;">
+                    <h5><i class="bi bi-check-circle-fill icon-success"></i> PDF转换完成</h5>
+                    <p id="convertStats"></p>
+                    <button class="btn btn-primary" onclick="goToStep(3)">
+                        下一步 <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 步骤3: 索引文件上传 -->
+            <section class="step" id="step-3">
+                <h2 class="step-title">上传索引文件</h2>
+
+                <div class="info-box">
+                    <strong>索引文件格式说明：</strong><br>
+                    • <strong>图像词典</strong>：每行格式为 <code>词目[Tab]页码</code>（例：阿　100）<br>
+                    • 支持 <strong>TXT文件</strong>（UTF-8编码）和 <strong>Excel文件</strong>（.xlsx/.xls）
+                </div>
+
+                <div class="upload-area" id="indexUploadArea">
+                    <i class="bi bi-file-earmark-spreadsheet upload-icon"></i>
+                    <h3 class="upload-title">选择索引文件</h3>
+                    <p class="upload-hint">支持 TXT / Excel 格式</p>
+                    <input type="file" id="indexFileInput" accept=".txt,.xlsx,.xls">
+                    <button class="btn btn-primary" style="margin-top: 1rem"
+                        onclick="event.stopPropagation(); document.getElementById('indexFileInput').click()">
+                        <i class="bi bi-file-earmark-text"></i>
+                        选择文件
+                    </button>
+                </div>
+
+                <div id="indexFileInfo" class="result-card" style="display: none;">
+                    <h5><i class="bi bi-check-circle-fill icon-success"></i> 索引文件已选择</h5>
+                    <p id="indexFileName" style="margin: 0.5rem 0;"></p>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label class="form-label">正文起始页</label>
+                        <input type="number" class="form-control" id="bodyStart" value="1" min="1"
+                            style="max-width: 150px;">
+                        <p class="form-hint">索引页码对应的第一张图片序号</p>
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="goToStep(2)">
+                            <i class="bi bi-arrow-left"></i> 上一步
+                        </button>
+                        <button class="btn btn-primary" onclick="uploadIndexFile()">
+                            上传并处理 <i class="bi bi-upload"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="progress-section" id="indexProgress" style="display: none;">
+                    <h4 class="progress-title">正在处理索引文件...</h4>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="indexProgressBar" style="width: 0%"></div>
+                    </div>
+                    <p class="progress-status" id="indexStatus">准备中...</p>
+                </div>
+
+                <div id="indexResult" class="result-card" style="display: none;">
+                    <h5><i class="bi bi-check-circle-fill icon-success"></i> 索引处理完成</h5>
+                    <p id="indexStats"></p>
+                    <div class="preview-box">
+                        <small style="color: #888;">预览（前20行）：</small>
+                        <pre id="indexPreview" style="margin: 0.5rem 0 0 0;"></pre>
+                    </div>
+                    <button class="btn btn-primary" style="margin-top: 1rem;" onclick="goToStep(4)">
+                        下一步 <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 步骤4: 生成词典 -->
+            <section class="step" id="step-4">
+                <h2 class="step-title">词典配置</h2>
+
+                <form id="buildForm">
+                    <div class="form-group">
+                        <label class="form-label">词典名称 <span style="color: var(--vermilion);">*</span></label>
+                        <input type="text" class="form-control" id="dictName" placeholder="请输入词典名称" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">作者</label>
+                        <input type="text" class="form-control" id="author" placeholder="您的名字（可选）">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">描述</label>
+                        <textarea class="form-control" id="description" placeholder="词典描述（可选）"></textarea>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="goToStep(3)">
+                            上一步
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="startBuild()">
+                            生成词典
+                        </button>
+                    </div>
+                </form>
+
+                <div class="progress-section" id="buildProgress" style="display: none;">
+                    <h4 class="progress-title">正在生成MDX词典...</h4>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="buildProgressBar" style="width: 0%"></div>
+                    </div>
+                    <p class="progress-status" id="buildStatus">准备中...</p>
+                </div>
+
+                <div id="buildResult" class="result-card" style="display: none; border-left-color: var(--gold);">
+                    <h5 style="color: var(--gold);">词典生成完成！</h5>
+                    <p id="buildStats">请下载以下文件：</p>
+                    <div class="download-group" id="downloadButtons">
+                        <!-- 动态生成的下载按钮 -->
+                    </div>
+                    <button class="btn btn-secondary" style="margin-top: 1.5rem;" onclick="resetAll()">
+                        制作新词典
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            <p>
+                本程序由网友 <strong>Mandolin</strong> 设计原始程序，<strong>李周渊</strong> 优化。<br>
+                Powered by <a href="https://github.com/lizhou828/AutoMdxBuilder" target="_blank">AutoMdxBuilder</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        let currentTaskId = null;
+        let convertCeleryTaskId = null;
+        let indexCeleryTaskId = null;
+        let buildCeleryTaskId = null;
+        let selectedIndexFile = null;
+
+        // 上传区域事件
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                fileInput.click();
+            }
+        });
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // 索引文件上传区域事件
+        const indexUploadArea = document.getElementById('indexUploadArea');
+        const indexFileInput = document.getElementById('indexFileInput');
+
+        indexUploadArea.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                indexFileInput.click();
+            }
+        });
+        indexFileInput.addEventListener('change', handleIndexFileSelect);
+
+        function handleIndexFileSelect() {
+            const file = indexFileInput.files[0];
+            if (!file) return;
+
+            const ext = file.name.toLowerCase().split('.').pop();
+            if (!['txt', 'xlsx', 'xls'].includes(ext)) {
+                alert('请选择TXT或Excel文件！');
+                return;
+            }
+
+            selectedIndexFile = file;
+            document.getElementById('indexFileName').textContent = '文件名: ' + file.name;
+            document.getElementById('indexFileInfo').style.display = 'block';
+            document.getElementById('indexFileInfo').classList.add('file-selected');
+            document.getElementById('indexUploadArea').style.display = 'none';
+        }
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                alert('请选择PDF文件！');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // 显示上传中状态
+            // 显示上传中状态
+            uploadArea.innerHTML = '<div class="upload-icon" style="font-family: \'ZCOOL XiaoWei\', serif; animation: pulse 1.5s infinite;">傳</div><h3 class="upload-title">正在上传...</h3>';
+
+            fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('上传失败: ' + data.error);
+                        location.reload();
+                        return;
+                    }
+                    currentTaskId = data.task_id;
+                    document.getElementById('fileName').textContent = '文件名: ' + file.name;
+
+                    // 设置默认词典名称（去除后缀）
+                    const defaultName = file.name.replace(/\.[^/.]+$/, "");
+                    document.getElementById('dictName').value = defaultName;
+
+                    document.getElementById('fileInfo').style.display = 'block';
+                    document.getElementById('fileInfo').classList.add('file-selected');
+                    uploadArea.style.display = 'none';
+                })
+                .catch(error => {
+                    alert('上传失败: ' + error);
+                    location.reload();
+                });
+        }
+
+        function goToStep(step) {
+            // 隐藏所有步骤
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            // 显示目标步骤
+            document.getElementById('step-' + step).classList.add('active');
+
+            // 更新指示器
+            for (let i = 1; i <= 4; i++) {
+                const indicator = document.getElementById('indicator-' + i);
+                indicator.classList.remove('active', 'completed');
+                if (i < step) {
+                    indicator.classList.add('completed');
+                } else if (i === step) {
+                    indicator.classList.add('active');
+                }
+            }
+        }
+
+        function uploadIndexFile() {
+            if (!selectedIndexFile) {
+                alert('请先选择索引文件！');
+                return;
+            }
+
+            const bodyStart = document.getElementById('bodyStart').value;
+
+            const formData = new FormData();
+            formData.append('file', selectedIndexFile);
+            formData.append('task_id', currentTaskId);
+            formData.append('body_start', bodyStart);
+
+            document.getElementById('indexFileInfo').style.display = 'none';
+            document.getElementById('indexProgress').style.display = 'block';
+
+            fetch('/api/upload-index', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('上传索引文件失败: ' + data.error);
+                        document.getElementById('indexProgress').style.display = 'none';
+                        document.getElementById('indexFileInfo').style.display = 'block';
+                        return;
+                    }
+                    indexCeleryTaskId = data.celery_task_id;
+                    monitorTask(indexCeleryTaskId, 'index');
+                })
+                .catch(error => {
+                    alert('上传索引文件失败: ' + error);
+                    document.getElementById('indexProgress').style.display = 'none';
+                    document.getElementById('indexFileInfo').style.display = 'block';
+                });
+        }
+
+        function startConversion() {
+            const dpi = document.getElementById('dpi').value;
+            const quality = document.getElementById('quality').value;
+            const crop = document.getElementById('autoCrop').checked;
+
+            document.getElementById('convertProgress').style.display = 'block';
+            document.getElementById('convertForm').style.display = 'none';
+
+            fetch('/api/convert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    task_id: currentTaskId,
+                    dpi: parseInt(dpi),
+                    quality: parseInt(quality),
+                    crop: crop
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('启动转换失败: ' + data.error);
+                        return;
+                    }
+                    convertCeleryTaskId = data.celery_task_id;
+                    monitorTask(convertCeleryTaskId, 'convert');
+                })
+                .catch(error => {
+                    alert('启动转换失败: ' + error);
+                });
+        }
+
+        function startBuild() {
+            const dictName = document.getElementById('dictName').value;
+            const author = document.getElementById('author').value;
+            const description = document.getElementById('description').value;
+            const bodyStart = document.getElementById('bodyStart').value;
+
+            if (!dictName) {
+                alert('请输入词典名称！');
+                return;
+            }
+
+            // 生成配置文件内容 (AutoMdxBuilder 1.5+ 格式)
+            const config = `[global]
+templ_choice = "B"
+name = "${dictName}"
+name_abbr = "${dictName.substring(0, 10)}"
+simp_trad_flg = false
+
+[template]
+[template.b]
+body_start = ${bodyStart}
+`;
+
+            document.getElementById('buildProgress').style.display = 'block';
+            document.getElementById('buildForm').style.display = 'none';
+
+            fetch('/api/build', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    task_id: currentTaskId,
+                    config: config
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('启动构建失败: ' + data.error);
+                        return;
+                    }
+                    buildCeleryTaskId = data.celery_task_id;
+                    monitorTask(buildCeleryTaskId, 'build');
+                })
+                .catch(error => {
+                    alert('启动构建失败: ' + error);
+                });
+        }
+
+        function monitorTask(celeryTaskId, type) {
+            const interval = setInterval(() => {
+                fetch('/api/status/' + celeryTaskId)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.state === 'PROGRESS') {
+                            const percent = Math.round((data.current / data.total) * 100);
+                            document.getElementById(type + 'ProgressBar').style.width = percent + '%';
+                            document.getElementById(type + 'Status').textContent = data.status;
+                        } else if (data.state === 'SUCCESS') {
+                            clearInterval(interval);
+                            document.getElementById(type + 'Progress').style.display = 'none';
+                            document.getElementById(type + 'Result').style.display = 'block';
+                            if (type === 'convert') {
+                                const successful = data.result?.stats?.successful ?? 0;
+                                const failed = data.result?.stats?.failed ?? 0;
+                                document.getElementById('convertStats').textContent =
+                                    `成功转换 ${successful} 页，失败 ${failed} 页`;
+                            } else if (type === 'index') {
+                                const count = data.result?.count ?? 0;
+                                const preview = data.result?.preview ?? '';
+                                document.getElementById('indexStats').textContent =
+                                    `共处理 ${count} 条索引数据`;
+                                document.getElementById('indexPreview').textContent = preview;
+                            } else {
+                                const files = data.result?.files ?? [];
+                                document.getElementById('buildStats').textContent = '请下载以下文件：';
+
+                                // 生成下载按钮
+                                const btnContainer = document.getElementById('downloadButtons');
+                                btnContainer.innerHTML = '';
+                                files.forEach(file => {
+                                    const btn = document.createElement('button');
+                                    btn.className = 'btn btn-primary btn-lg'; // Using btn-primary for download to look better
+                                    btn.innerHTML = `${file}`;
+                                    btn.onclick = () => downloadResult(file);
+                                    btnContainer.appendChild(btn);
+                                });
+                            }
+                        } else if (data.state === 'FAILURE') {
+                            clearInterval(interval);
+                            alert('任务失败: ' + data.status);
+                        }
+                    })
+                    .catch(error => {
+                        clearInterval(interval);
+                        alert('查询状态失败: ' + error);
+                    });
+            }, 1000);
+        }
+
+        function downloadResult(filename) {
+            let url = '/api/download/' + currentTaskId;
+            if (filename) {
+                url += '?filename=' + encodeURIComponent(filename);
+            }
+            window.location.href = url;
+        }
+
+        function resetAll() {
+            if (currentTaskId) {
+                fetch('/api/cleanup/' + currentTaskId, { method: 'DELETE' });
+            }
+            location.reload();
+        }
+
+        // 添加旋转动画的CSS
+        const style = document.createElement('style');
+        style.textContent = '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+        document.head.appendChild(style);
+    </script>
+</body>
+
+</html>
