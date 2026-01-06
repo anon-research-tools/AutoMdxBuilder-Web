@@ -1,0 +1,48 @@
+  name: Build Desktop App
+
+  on:
+    push:
+      branches: [main]
+    workflow_dispatch:
+
+  jobs:
+    build:
+      strategy:
+        matrix:
+          include:
+            - os: macos-latest
+              artifact_name: AutoMdxBuilder-Mac
+            - os: windows-latest
+              artifact_name: AutoMdxBuilder-Windows
+
+      runs-on: ${{ matrix.os }}
+
+      steps:
+        - uses: actions/checkout@v4
+        - uses: actions/setup-python@v5
+          with:
+            python-version: '3.11'
+
+        - name: Install dependencies
+          run: |
+            pip install pyinstaller flask flask-cors PyMuPDF Pillow openpyxl python-dotenv
+
+        - name: Build
+          run: pyinstaller --noconfirm AutoMdxBuilder_Simple.spec
+
+        - name: Prepare Mac Release
+          if: runner.os == 'macOS'
+          run: |
+            mkdir -p release
+            cp -R dist/AutoMdxBuilder.app release/
+
+        - name: Prepare Windows Release
+          if: runner.os == 'Windows'
+          run: |
+            mkdir release
+            xcopy dist\AutoMdxBuilder release\AutoMdxBuilder\ /E /I
+
+        - uses: actions/upload-artifact@v4
+          with:
+            name: ${{ matrix.artifact_name }}
+            path: release/
