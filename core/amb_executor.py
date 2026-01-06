@@ -72,29 +72,40 @@ class AutoMdxBuilderExecutor:
             cwd = str(amb_dir)
 
             # 构建命令
-            cmd = [str(self.amb_path)]
-            
-            # 在 Linux 下使用 nice 降低优先级，防止 CPU 抢占
+            # Windows 上需要通过 Python 解释器执行脚本
             import sys
-            if sys.platform != 'win32':
+            if sys.platform == 'win32':
+                # Windows: 使用 Python 解释器执行
+                cmd = [sys.executable, str(self.amb_path)]
+            else:
+                # Mac/Linux: 可以直接执行脚本
+                cmd = [str(self.amb_path)]
+                # 在 Linux 下使用 nice 降低优先级，防止 CPU 抢占
                 cmd = ['nice', '-n', '10'] + cmd
 
             logger.info(f"执行命令: {' '.join(cmd)}")
             logger.info(f"工作目录: {cwd}")
 
             # 启动子进程
-            # 使用 start_new_session 可以在停止时更好地清理进程树
-            self.process = subprocess.Popen(
-                cmd,
-                cwd=cwd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-                universal_newlines=True,
-                start_new_session=True
-            )
+            # Windows 和 Unix 使用不同的进程创建方式
+            popen_kwargs = {
+                'cwd': cwd,
+                'stdin': subprocess.PIPE,
+                'stdout': subprocess.PIPE,
+                'stderr': subprocess.STDOUT,
+                'text': True,
+                'bufsize': 1,
+                'universal_newlines': True,
+            }
+
+            if sys.platform == 'win32':
+                # Windows: 使用 CREATE_NEW_PROCESS_GROUP
+                popen_kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
+            else:
+                # Unix: 使用 start_new_session 可以在停止时更好地清理进程树
+                popen_kwargs['start_new_session'] = True
+
+            self.process = subprocess.Popen(cmd, **popen_kwargs)
 
             # 实时读取输出，增加超时检查
             start_time = time.time()
@@ -209,13 +220,23 @@ class AutoMdxBuilderExecutor:
         """停止执行"""
         if self.process:
             try:
-                # 尝试优雅停止进程组
-                os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
-                try:
-                    self.process.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    os.killpg(os.getpgid(self.process.pid), signal.SIGKILL)
-                    self.process.wait(timeout=2)
+                import sys
+                if sys.platform == 'win32':
+                    # Windows: 使用 terminate() 和 kill()
+                    self.process.terminate()
+                    try:
+                        self.process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        self.process.kill()
+                        self.process.wait(timeout=2)
+                else:
+                    # Unix: 使用进程组停止
+                    os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+                    try:
+                        self.process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        os.killpg(os.getpgid(self.process.pid), signal.SIGKILL)
+                        self.process.wait(timeout=2)
             except Exception as e:
                 logger.error(f"停止进程时出错: {e}", exc_info=True)
             finally:
