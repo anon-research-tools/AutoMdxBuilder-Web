@@ -76,7 +76,8 @@ class AutoMdxBuilderExecutor:
             import sys
             if sys.platform == 'win32':
                 # Windows: 使用 Python 解释器执行
-                cmd = [sys.executable, str(self.amb_path)]
+                # 添加 -u 参数禁用输出缓冲
+                cmd = [sys.executable, '-u', str(self.amb_path)]
             else:
                 # Mac/Linux: 可以直接执行脚本
                 cmd = [str(self.amb_path)]
@@ -85,6 +86,7 @@ class AutoMdxBuilderExecutor:
 
             logger.info(f"执行命令: {' '.join(cmd)}")
             logger.info(f"工作目录: {cwd}")
+            logger.info(f"配置文件: {config_path}")
 
             # 启动子进程
             # Windows 和 Unix 使用不同的进程创建方式
@@ -101,25 +103,45 @@ class AutoMdxBuilderExecutor:
             if sys.platform == 'win32':
                 # Windows: 使用 CREATE_NEW_PROCESS_GROUP
                 popen_kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
+                # Windows: 明确指定 UTF-8 编码
+                popen_kwargs['encoding'] = 'utf-8'
+                popen_kwargs['errors'] = 'replace'  # 替换无法解码的字符
+                # Windows: 设置环境变量确保 Python 使用 UTF-8
+                env = os.environ.copy()
+                env['PYTHONIOENCODING'] = 'utf-8'
+                env['PYTHONUNBUFFERED'] = '1'
+                popen_kwargs['env'] = env
             else:
                 # Unix: 使用 start_new_session 可以在停止时更好地清理进程树
                 popen_kwargs['start_new_session'] = True
 
+            logger.info("启动 AutoMdxBuilder 进程...")
             self.process = subprocess.Popen(cmd, **popen_kwargs)
+            logger.info(f"进程已启动，PID: {self.process.pid}")
 
             # 实时读取输出，增加超时检查
             start_time = time.time()
             options_sent = False
             dir_sent = False
-            
+
             # 使用更健壮的读取方式，不依赖于换行符
             # 因为提示符可能没有换行
-            
+
             output_buffer = ""
-            
+            last_log_time = time.time()
+
             while True:
+                # 定期记录状态（每 30 秒）
+                current_time = time.time()
+                if current_time - last_log_time > 30:
+                    elapsed = int(current_time - start_time)
+                    logger.info(f"进程运行中... 已运行 {elapsed} 秒")
+                    if output_callback:
+                        output_callback(f"进程运行中... 已运行 {elapsed} 秒")
+                    last_log_time = current_time
+
                 # 检查是否超时
-                if time.time() - start_time > timeout:
+                if current_time - start_time > timeout:
                     logger.error("AutoMdxBuilder 执行超时")
                     self.stop()
                     return False, "执行超时"
@@ -127,6 +149,7 @@ class AutoMdxBuilderExecutor:
                 # 检查进程是否已结束
                 poll = self.process.poll()
                 if poll is not None:
+                    logger.info(f"进程已结束，返回码: {poll}")
                     # 读取剩余输出
                     remaining = self.process.stdout.read()
                     if remaining:
